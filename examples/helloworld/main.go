@@ -9,11 +9,11 @@ import (
     "syscall"
     "time"
     
-    "github.com/hezephyr/gomicrokit/pkg/log"
-    "github.com/hezephyr/gomicrokit/pkg/registry"
-    "github.com/hezephyr/gomicrokit/pkg/registry/memory"
-    "github.com/hezephyr/gomicrokit/pkg/service"
-    "github.com/hezephyr/gomicrokit/pkg/transport/http"
+    "github.com/HeZephyr/GoMicroKit/pkg/log"
+    "github.com/HeZephyr/GoMicroKit/pkg/registry"
+    "github.com/HeZephyr/GoMicroKit/pkg/registry/memory"
+    "github.com/HeZephyr/GoMicroKit/pkg/service"
+    "github.com/HeZephyr/GoMicroKit/pkg/transport/http"
 )
 
 // Request and response types
