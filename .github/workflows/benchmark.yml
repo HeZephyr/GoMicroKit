@@ -10,14 +10,14 @@ jobs:
     name: Performance Benchmarks
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: write  # Needed for pushing to gh-pages
     steps:
       - uses: actions/checkout@v3
 
       - name: Set up Go
         uses: actions/setup-go@v3
         with:
-          go-version: 1.23
+          go-version: 1.22
 
       - name: Run benchmarks
         run: |
@@ -34,9 +34,5 @@ jobs:
           alert-threshold: '200%'
           comment-on-alert: true
           fail-on-alert: true
-          # Use GitHub's default configuration for gh-pages
-          gh-pages-branch: gh-pages
-          benchmark-data-dir-path: dev/bench
-          skip-fetch-gh-pages: false
-          # Set this to true to create the branch if it doesn't exist
-          auto-push-gh-pages: true
+          gh-pages-branch: 'gh-pages'
+          benchmark-data-dir-path: 'dev/bench'
