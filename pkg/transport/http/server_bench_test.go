@@ -40,7 +40,9 @@ func BenchmarkServerRegister(b *testing.B) {
 		svc.AddEndpoint(endpoint)
 
 		server := microhttp.NewServer()
-		server.Register(svc)
+		if err := server.Register(svc); err != nil {
+			b.Fatalf("Failed to register service: %v", err)
+		}
 	}
 }
 
@@ -52,7 +54,9 @@ func BenchmarkJSONCodecEncode(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		var buf bytes.Buffer
-		codec.Encode(context.Background(), &buf, resp)
+		if err := codec.Encode(context.Background(), &buf, resp); err != nil {
+			b.Fatalf("Failed to encode: %v", err)
+		}
 	}
 }
 
@@ -64,7 +68,9 @@ func BenchmarkJSONCodecDecode(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		var req BenchRequest
-		codec.Decode(context.Background(), bytes.NewReader(data), &req)
+		if err := codec.Decode(context.Background(), bytes.NewReader(data), &req); err != nil {
+			b.Fatalf("Failed to decode: %v", err)
+		}
 	}
 }
 
@@ -81,7 +87,9 @@ func BenchmarkHTTPRequestHandling(b *testing.B) {
 	svc.AddEndpoint(endpoint)
 
 	server := microhttp.NewServer()
-	server.Register(svc)
+	if err := server.Register(svc); err != nil {
+		b.Fatalf("Failed to register service: %v", err)
+	}
 
 	// Create a test server
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

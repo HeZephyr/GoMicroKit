@@ -28,7 +28,9 @@ func BenchmarkRegistryRegister(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		// Create a unique ID for each iteration to avoid conflicts
 		svc.ID = fmt.Sprintf("bench-service-%d", i)
-		reg.Register(ctx, svc)
+		if err := reg.Register(ctx, svc); err != nil {
+			b.Fatalf("Failed to register service: %v", err)
+		}
 	}
 }
 
@@ -48,12 +50,17 @@ func BenchmarkRegistryGetService(b *testing.B) {
 			Metadata:  map[string]string{"instance": fmt.Sprintf("%d", i)},
 			Endpoints: []string{"endpoint1", "endpoint2"},
 		}
-		reg.Register(ctx, svc)
+		if err := reg.Register(ctx, svc); err != nil {
+			b.Fatalf("Failed to register service %d: %v", i, err)
+		}
 	}
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		reg.GetService(ctx, "bench-service")
+		_, err := reg.GetService(ctx, "bench-service")
+		if err != nil {
+			b.Fatalf("Failed to get service: %v", err)
+		}
 	}
 }
 
@@ -73,12 +80,16 @@ func BenchmarkRegistryDeregister(b *testing.B) {
 			Port:    8080 + i,
 		}
 		services[i] = svc
-		reg.Register(ctx, svc)
+		if err := reg.Register(ctx, svc); err != nil {
+			b.Fatalf("Failed to register service %d: %v", i, err)
+		}
 	}
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		reg.Deregister(ctx, services[i])
+		if err := reg.Deregister(ctx, services[i]); err != nil {
+			b.Fatalf("Failed to deregister service %d: %v", i, err)
+		}
 	}
 }
 

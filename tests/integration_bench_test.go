@@ -53,11 +53,15 @@ func BenchmarkFullRequestFlow(b *testing.B) {
 	server := microhttp.NewServer()
 
 	// Register the service with the transport
-	server.Register(svc)
+	if err := server.Register(svc); err != nil {
+		b.Fatalf("Failed to register service: %v", err)
+	}
 
 	// Register the service with the registry
 	serviceInfo := registry.FromService(svc, "localhost", 8080)
-	reg.Register(context.Background(), serviceInfo)
+	if err := reg.Register(context.Background(), serviceInfo); err != nil {
+		b.Fatalf("Failed to register service with registry: %v", err)
+	}
 
 	// Create a test server
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -79,7 +83,9 @@ func BenchmarkFullRequestFlow(b *testing.B) {
 		}
 
 		var response BenchResponse
-		json.NewDecoder(resp.Body).Decode(&response)
+		if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
+			b.Fatal(err)
+		}
 		resp.Body.Close()
 	}
 }
@@ -101,12 +107,18 @@ func BenchmarkServiceDiscovery(b *testing.B) {
 			Metadata:  map[string]string{"instance": fmt.Sprintf("%d", i)},
 			Endpoints: []string{"endpoint1", "endpoint2"},
 		}
-		reg.Register(ctx, svc)
+		if err := reg.Register(ctx, svc); err != nil {
+			b.Fatalf("Failed to register service %d: %v", i, err)
+		}
 	}
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		services, _ := reg.GetService(ctx, "bench-service")
+		services, err := reg.GetService(ctx, "bench-service")
+		if err != nil {
+			b.Fatalf("Failed to get service: %v", err)
+		}
+
 		if len(services) == 0 {
 			b.Fatal("No services found")
 		}
