@@ -1,0 +1,30 @@
+# .github/workflows/security.yml
+name: Security Scan
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main, dev ]
+  schedule:
+    - cron: '0 0 * * 0'  # run at midnight on Sunday
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.23
+
+      - name: Run gosec
+        uses: securego/gosec@master
+        with:
+          args: './...'
+
+      - name: Run nancy for vulnerability checking
+        run: |
+          go list -json -m all | docker run --rm -i sonatypecommunity/nancy:latest sleuth
