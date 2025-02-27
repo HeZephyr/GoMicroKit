@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"reflect"
+	"time" // Add time package import
 
 	"github.com/HeZephyr/GoMicroKit/pkg/service"
 	"github.com/HeZephyr/GoMicroKit/pkg/transport"
@@ -43,8 +44,12 @@ func (s *Server) Name() string {
 // Serve starts the HTTP server
 func (s *Server) Serve(addr string) error {
 	s.server = &http.Server{
-		Addr:    addr,
-		Handler: s.mux,
+		Addr:              addr,
+		Handler:           s.mux,
+		ReadHeaderTimeout: 20 * time.Second, // Prevents Slowloris attacks
+		ReadTimeout:       1 * time.Minute,  // Maximum duration for reading the entire request
+		WriteTimeout:      2 * time.Minute,  // Maximum duration for writing the response
+		IdleTimeout:       3 * time.Minute,  // Maximum time to wait for the next request on keep-alive connections
 	}
 	return s.server.ListenAndServe()
 }
@@ -117,6 +122,11 @@ func (s *Server) RegisterCodec(codec transport.Codec) {
 	s.codecs[codec.ContentType()] = codec
 }
 
+// ServeHTTP implements the http.Handler interface (for testing)
+func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	s.mux.ServeHTTP(w, r)
+}
+
 // JSONCodec is a JSON codec
 type JSONCodec struct{}
 
@@ -126,16 +136,11 @@ func (c *JSONCodec) ContentType() string {
 }
 
 // Encode encodes a value to JSON
-func (c *JSONCodec) Encode(ctx context.Context, w io.Writer, v interface{}) error {
+func (c *JSONCodec) Encode(ctx context.Context, w io.Writer, v any) error {
 	return json.NewEncoder(w).Encode(v)
 }
 
 // Decode decodes JSON to a value
-func (c *JSONCodec) Decode(ctx context.Context, r io.Reader, v interface{}) error {
+func (c *JSONCodec) Decode(ctx context.Context, r io.Reader, v any) error {
 	return json.NewDecoder(r).Decode(v)
-}
-
-// ServeHTTP implements the http.Handler interface
-func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	s.mux.ServeHTTP(w, r)
 }

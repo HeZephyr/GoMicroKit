@@ -37,7 +37,7 @@ func BenchmarkLogWithFields(b *testing.B) {
 	logger := log.NewLogger()
 	logger.SetOutput(&buf)
 
-	fields := map[string]interface{}{
+	fields := map[string]any{
 		"key1": "value1",
 		"key2": 42,
 		"key3": true,

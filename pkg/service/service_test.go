@@ -138,7 +138,7 @@ func TestMiddlewareChain(t *testing.T) {
 	var calls []string
 
 	middleware1 := func(next service.Handler) service.Handler {
-		return func(ctx context.Context, req interface{}) (interface{}, error) {
+		return func(ctx context.Context, req any) (any, error) {
 			calls = append(calls, "before1")
 			resp, err := next(ctx, req)
 			calls = append(calls, "after1")
@@ -147,7 +147,7 @@ func TestMiddlewareChain(t *testing.T) {
 	}
 
 	middleware2 := func(next service.Handler) service.Handler {
-		return func(ctx context.Context, req interface{}) (interface{}, error) {
+		return func(ctx context.Context, req any) (any, error) {
 			calls = append(calls, "before2")
 			resp, err := next(ctx, req)
 			calls = append(calls, "after2")
@@ -156,7 +156,7 @@ func TestMiddlewareChain(t *testing.T) {
 	}
 
 	// Create a handler
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		calls = append(calls, "handler")
 		return "response", nil
 	}

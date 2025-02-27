@@ -58,7 +58,7 @@ func TestLogWithFields(t *testing.T) {
 
 	// Test with multiple fields
 	buf.Reset()
-	logger.WithFields(map[string]interface{}{
+	logger.WithFields(map[string]any{
 		"key1": "value1",
 		"key2": 42,
 	}).Info("Message with fields")

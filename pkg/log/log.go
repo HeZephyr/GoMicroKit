@@ -27,25 +27,25 @@ const (
 // Logger represents a logger
 type Logger interface {
 	// Debug logs a debug message
-	Debug(format string, args ...interface{})
+	Debug(format string, args ...any)
 
 	// Info logs an info message
-	Info(format string, args ...interface{})
+	Info(format string, args ...any)
 
 	// Warn logs a warning message
-	Warn(format string, args ...interface{})
+	Warn(format string, args ...any)
 
 	// Error logs an error message
-	Error(format string, args ...interface{})
+	Error(format string, args ...any)
 
 	// Fatal logs a fatal message and exits
-	Fatal(format string, args ...interface{})
+	Fatal(format string, args ...any)
 
 	// WithField adds a field to the logger
-	WithField(key string, value interface{}) Logger
+	WithField(key string, value any) Logger
 
 	// WithFields adds multiple fields to the logger
-	WithFields(fields map[string]interface{}) Logger
+	WithFields(fields map[string]any) Logger
 
 	// SetOutput sets the output writer
 	SetOutput(out io.Writer)
@@ -58,7 +58,7 @@ type Logger interface {
 type defaultLogger struct {
 	level  Level
 	out    io.Writer
-	fields map[string]interface{}
+	fields map[string]any
 }
 
 // NewLogger creates a new logger
@@ -66,7 +66,7 @@ func NewLogger() Logger {
 	return &defaultLogger{
 		level:  Info,
 		out:    os.Stdout,
-		fields: make(map[string]interface{}),
+		fields: make(map[string]any),
 	}
 }
 
@@ -81,35 +81,35 @@ func (l *defaultLogger) SetOutput(out io.Writer) {
 }
 
 // Debug logs a debug message
-func (l *defaultLogger) Debug(format string, args ...interface{}) {
+func (l *defaultLogger) Debug(format string, args ...any) {
 	if l.level <= Debug {
 		l.log("DEBUG", format, args...)
 	}
 }
 
 // Info logs an info message
-func (l *defaultLogger) Info(format string, args ...interface{}) {
+func (l *defaultLogger) Info(format string, args ...any) {
 	if l.level <= Info {
 		l.log("INFO", format, args...)
 	}
 }
 
 // Warn logs a warning message
-func (l *defaultLogger) Warn(format string, args ...interface{}) {
+func (l *defaultLogger) Warn(format string, args ...any) {
 	if l.level <= Warn {
 		l.log("WARN", format, args...)
 	}
 }
 
 // Error logs an error message
-func (l *defaultLogger) Error(format string, args ...interface{}) {
+func (l *defaultLogger) Error(format string, args ...any) {
 	if l.level <= Error {
 		l.log("ERROR", format, args...)
 	}
 }
 
 // Fatal logs a fatal message and exits
-func (l *defaultLogger) Fatal(format string, args ...interface{}) {
+func (l *defaultLogger) Fatal(format string, args ...any) {
 	if l.level <= Fatal {
 		l.log("FATAL", format, args...)
 		os.Exit(1)
@@ -117,11 +117,11 @@ func (l *defaultLogger) Fatal(format string, args ...interface{}) {
 }
 
 // WithField adds a field to the logger
-func (l *defaultLogger) WithField(key string, value interface{}) Logger {
+func (l *defaultLogger) WithField(key string, value any) Logger {
 	newLogger := &defaultLogger{
 		level:  l.level,
 		out:    l.out,
-		fields: make(map[string]interface{}),
+		fields: make(map[string]any),
 	}
 
 	// Copy existing fields
@@ -136,11 +136,11 @@ func (l *defaultLogger) WithField(key string, value interface{}) Logger {
 }
 
 // WithFields adds multiple fields to the logger
-func (l *defaultLogger) WithFields(fields map[string]interface{}) Logger {
+func (l *defaultLogger) WithFields(fields map[string]any) Logger {
 	newLogger := &defaultLogger{
 		level:  l.level,
 		out:    l.out,
-		fields: make(map[string]interface{}),
+		fields: make(map[string]any),
 	}
 
 	// Copy existing fields
@@ -157,7 +157,7 @@ func (l *defaultLogger) WithFields(fields map[string]interface{}) Logger {
 }
 
 // log logs a message
-func (l *defaultLogger) log(level, format string, args ...interface{}) {
+func (l *defaultLogger) log(level, format string, args ...any) {
 	// Format the message
 	msg := fmt.Sprintf(format, args...)
 

@@ -61,13 +61,13 @@ func BenchmarkNewEndpoint(b *testing.B) {
 func BenchmarkWithMiddleware(b *testing.B) {
 	// Create a simple middleware
 	middleware := func(next service.Handler) service.Handler {
-		return func(ctx context.Context, req interface{}) (interface{}, error) {
+		return func(ctx context.Context, req any) (any, error) {
 			return next(ctx, req)
 		}
 	}
 
 	// Create a simple handler
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+	handler := func(ctx context.Context, req any) (any, error) {
 		return "response", nil
 	}
 

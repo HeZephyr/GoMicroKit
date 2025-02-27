@@ -10,7 +10,7 @@ import (
 
 // Registry is an in-memory registry (useful for testing)
 type Registry struct {
-	sync.RWMutex
+	mu       sync.RWMutex // Named mutex instead of embedding
 	services map[string][]*registry.ServiceInfo
 	watchers map[string][]chan []*registry.ServiceInfo
 }
@@ -25,8 +25,8 @@ func NewRegistry() *Registry {
 
 // Register registers a service
 func (r *Registry) Register(ctx context.Context, svc *registry.ServiceInfo) error {
-	r.Lock()
-	defer r.Unlock()
+	r.mu.Lock()
+	defer r.mu.Unlock()
 
 	services, ok := r.services[svc.Name]
 	if !ok {
@@ -57,8 +57,8 @@ func (r *Registry) Register(ctx context.Context, svc *registry.ServiceInfo) erro
 
 // Deregister removes a service
 func (r *Registry) Deregister(ctx context.Context, svc *registry.ServiceInfo) error {
-	r.Lock()
-	defer r.Unlock()
+	r.mu.Lock()
+	defer r.mu.Unlock()
 
 	services, ok := r.services[svc.Name]
 	if !ok {
@@ -86,8 +86,8 @@ func (r *Registry) Deregister(ctx context.Context, svc *registry.ServiceInfo) er
 
 // GetService returns all instances of a service
 func (r *Registry) GetService(ctx context.Context, name string) ([]*registry.ServiceInfo, error) {
-	r.RLock()
-	defer r.RUnlock()
+	r.mu.RLock()
+	defer r.mu.RUnlock()
 
 	services, ok := r.services[name]
 	if !ok {
@@ -105,13 +105,13 @@ func (r *Registry) GetService(ctx context.Context, name string) ([]*registry.Ser
 func (r *Registry) Watch(ctx context.Context, name string) (registry.Watcher, error) {
 	ch := make(chan []*registry.ServiceInfo, 10)
 
-	r.Lock()
+	r.mu.Lock()
 	if _, ok := r.watchers[name]; !ok {
 		r.watchers[name] = []chan []*registry.ServiceInfo{ch}
 	} else {
 		r.watchers[name] = append(r.watchers[name], ch)
 	}
-	r.Unlock()
+	r.mu.Unlock()
 
 	// Send initial service list
 	services, _ := r.GetService(ctx, name)
@@ -160,8 +160,8 @@ func (w *memoryWatcher) Next() ([]*registry.ServiceInfo, error) {
 
 // Stop stops the watcher
 func (w *memoryWatcher) Stop() error {
-	w.registry.Lock()
-	defer w.registry.Unlock()
+	w.registry.mu.Lock()
+	defer w.registry.mu.Unlock()
 
 	watchers, ok := w.registry.watchers[w.name]
 	if !ok {

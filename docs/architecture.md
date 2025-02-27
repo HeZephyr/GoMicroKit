@@ -85,7 +85,7 @@ type Service interface {
 ```go
 type Endpoint interface {
     Name() string
-    Handler() interface{}
+    Handler() any
     RequestType() reflect.Type
     ResponseType() reflect.Type
     Metadata() map[string]string
@@ -115,8 +115,8 @@ type Transport interface {
 ```go
 type Codec interface {
     ContentType() string
-    Encode(ctx context.Context, w io.Writer, v interface{}) error
-    Decode(ctx context.Context, r io.Reader, v interface{}) error
+    Encode(ctx context.Context, w io.Writer, v any) error
+    Decode(ctx context.Context, r io.Reader, v any) error
 }
 ```
 
@@ -152,7 +152,7 @@ type Registry interface {
 ```go
 type CircuitBreaker interface {
     Name() string
-    Execute(ctx context.Context, fn func(ctx context.Context) (interface{}, error)) (interface{}, error)
+    Execute(ctx context.Context, fn func(ctx context.Context) (any, error)) (any, error)
     Allow() bool
     Success()
     Failure()
@@ -174,13 +174,13 @@ type RateLimiter interface {
 **Logger 接口**：
 ```go
 type Logger interface {
-    Debug(format string, args ...interface{})
-    Info(format string, args ...interface{})
-    Warn(format string, args ...interface{})
-    Error(format string, args ...interface{})
-    Fatal(format string, args ...interface{})
-    WithField(key string, value interface{}) Logger
-    WithFields(fields map[string]interface{}) Logger
+    Debug(format string, args ...any)
+    Info(format string, args ...any)
+    Warn(format string, args ...any)
+    Error(format string, args ...any)
+    Fatal(format string, args ...any)
+    WithField(key string, value any) Logger
+    WithFields(fields map[string]any) Logger
 }
 ```
 
@@ -228,7 +228,7 @@ type Logger interface {
 ```go
 type Middleware func(Handler) Handler
 
-type Handler func(ctx context.Context, request interface{}) (response interface{}, err error)
+type Handler func(ctx context.Context, request any) (response any, err error)
 ```
 
 ### 4.2 中间件链
