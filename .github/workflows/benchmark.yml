@@ -13,16 +13,24 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v3
         with:
           go-version: 1.23
 
+      - name: Create gh-pages branch if not exists
+        run: |
+          git fetch origin || true
+          if ! git rev-parse --verify origin/gh-pages >/dev/null 2>&1; then
+            git checkout --orphan gh-pages
+            git rm -rf .
+            git commit --allow-empty -m "Initial gh-pages commit"
+            git push origin gh-pages
+            git checkout -
+          fi
+
       - name: Run benchmarks
         run: |
-          # Create the output directory if it doesn't exist
           mkdir -p dev/bench
-          
-          # Run the benchmarks and save the output to a file
           go test -bench=. -benchmem ./... | tee benchmark-result.txt
 
       - name: Store benchmark result
@@ -32,9 +40,6 @@ jobs:
           output-file-path: benchmark-result.txt
           github-token: ${{ secrets.GITHUB_TOKEN }}
           auto-push: true
-          # Show alert with commit comment on detecting possible regression
           alert-threshold: '200%'
           comment-on-alert: true
           fail-on-alert: true
-          gh-pages-branch: gh-pages
-          benchmark-data-dir-path: dev/bench
