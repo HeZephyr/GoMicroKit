@@ -9,6 +9,8 @@ on:
 jobs:
   goreleaser:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Needed for creating releases
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -23,7 +25,8 @@ jobs:
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v4
         with:
+          distribution: goreleaser
           version: latest
-          args: release --rm-dist
+          args: release --clean  # Changed from --rm-dist to --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
