@@ -3,9 +3,10 @@ package registry
 
 import (
     "context"
+    "fmt"
     "time"
     
-    "github.com/hezephyr/gomicrokit/pkg/service"
+    "github.com/HeZephyr/GoMicroKit/pkg/service"
 )
 
 // ServiceInfo contains information about a service instance
@@ -45,7 +46,7 @@ type Watcher interface {
 
 // RegisterOptions contains options for service registration
 type RegisterOptions struct {
-    TTL         time.Duration
+    TTL           time.Duration
     CheckInterval time.Duration
     CheckTimeout  time.Duration
 }
@@ -53,7 +54,7 @@ type RegisterOptions struct {
 // DefaultRegisterOptions returns default register options
 func DefaultRegisterOptions() RegisterOptions {
     return RegisterOptions{
-        TTL:         time.Second * 30,
+        TTL:           time.Second * 30,
         CheckInterval: time.Second * 10,
         CheckTimeout:  time.Second * 5,
     }
@@ -79,5 +80,5 @@ func FromService(svc service.Service, address string, port int) *ServiceInfo {
 
 // Helper function to generate a unique service ID
 func generateID(name, address string, port int) string {
-    return name + "-" + address + "-" + string(port)
+    return fmt.Sprintf("%s-%s-%d", name, address, port)
 }

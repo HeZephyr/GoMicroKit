@@ -5,7 +5,7 @@ import (
     "context"
     "io"
     
-    "github.com/hezephyr/gomicrokit/pkg/service"
+    "github.com/HeZephyr/GoMicroKit/pkg/service"
 )
 
 // Transport represents a communication transport layer

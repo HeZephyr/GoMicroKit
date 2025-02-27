@@ -4,9 +4,8 @@ package memory
 import (
     "context"
     "sync"
-    "time"
     
-    "github.com/hezephyr/gomicrokit/pkg/registry"
+    "github.com/HeZephyr/GoMicroKit/pkg/registry"
 )
 
 // Registry is an in-memory registry (useful for testing)

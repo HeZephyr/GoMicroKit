@@ -13,7 +13,7 @@ A lightweight, high-performance microservice framework for Go that strikes the p
 ## Installation
 
 ```bash
-go get github.com/hezephyr/gomicrokit
+go get github.com/HeZephyr/GoMicroKit
 ```
 
 ## Quick Start
@@ -24,8 +24,8 @@ package main
 import (
     "context"
     
-    "github.com/hezephyr/gomicrokit/pkg/service"
-    "github.com/hezephyr/gomicrokit/pkg/transport/http"
+    "github.com/HeZephyr/GoMicroKit/pkg/service"
+    "github.com/HeZephyr/GoMicroKit/pkg/transport/http"
 )
 
 // Define request and response
