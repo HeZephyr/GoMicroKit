@@ -21,7 +21,10 @@ func BenchmarkRetry_Execute_Success(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		retry.Execute(ctx, fn)
+		_, err := retry.Execute(ctx, fn)
+		if err != nil {
+			b.Fatalf("Expected no error, got: %v", err)
+		}
 	}
 }
 
@@ -38,13 +41,16 @@ func BenchmarkRetry_Execute_EventualSuccess(b *testing.B) {
 		// Reset count for each benchmark iteration
 		attemptCount := 0
 
-		retry.Execute(ctx, func(ctx context.Context) (any, error) {
+		_, err := retry.Execute(ctx, func(ctx context.Context) (any, error) {
 			attemptCount++
 			if attemptCount < 3 {
 				return nil, errors.New("error")
 			}
 			return "success", nil
 		})
+		if err != nil {
+			b.Fatalf("Expected no error after retries, got: %v", err)
+		}
 	}
 }
 
@@ -63,7 +69,11 @@ func BenchmarkRetry_Execute_AlwaysFail(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		retry.Execute(ctx, fn)
+		_, err := retry.Execute(ctx, fn)
+		// We expect this to fail, but we still check the error
+		if err == nil {
+			b.Fatalf("Expected error, got nil")
+		}
 	}
 }
 
@@ -93,7 +103,10 @@ func BenchmarkRetry_Middleware(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		retryHandler(ctx, "request")
+		_, err := retryHandler(ctx, "request")
+		if err != nil {
+			b.Fatalf("Expected no error, got: %v", err)
+		}
 	}
 }
 
@@ -121,7 +134,10 @@ func BenchmarkRetry_Middleware_WithRetries(b *testing.B) {
 		}
 
 		retryHandler := middleware(handler)
-		retryHandler(ctx, "request")
+		_, err := retryHandler(ctx, "request")
+		if err != nil {
+			b.Fatalf("Expected no error after retries, got: %v", err)
+		}
 	}
 }
 
@@ -149,7 +165,10 @@ func BenchmarkRetry_MiddlewareChain(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		chainedHandler(ctx, "request")
+		_, err := chainedHandler(ctx, "request")
+		if err != nil {
+			b.Fatalf("Expected no error, got: %v", err)
+		}
 	}
 }
 
@@ -215,7 +234,11 @@ func BenchmarkRetry_DifferentRetryOptions(b *testing.B) {
 
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			retry.Execute(ctx, fn)
+			_, err := retry.Execute(ctx, fn)
+			// We expect this to fail, but we still check the error
+			if err == nil {
+				b.Fatalf("Expected error, got nil")
+			}
 		}
 	})
 
@@ -228,7 +251,11 @@ func BenchmarkRetry_DifferentRetryOptions(b *testing.B) {
 
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			retry.Execute(ctx, fn)
+			_, err := retry.Execute(ctx, fn)
+			// We expect this to fail, but we still check the error
+			if err == nil {
+				b.Fatalf("Expected error, got nil")
+			}
 		}
 	})
 
@@ -245,7 +272,11 @@ func BenchmarkRetry_DifferentRetryOptions(b *testing.B) {
 
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			retry.Execute(ctx, fn)
+			_, err := retry.Execute(ctx, fn)
+			// We expect this to fail, but we still check the error
+			if err == nil {
+				b.Fatalf("Expected error, got nil")
+			}
 		}
 	})
 }
