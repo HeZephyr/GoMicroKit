@@ -119,7 +119,7 @@ func TestCircuitBreaker_Execute(t *testing.T) {
 		return "should not execute", nil
 	})
 
-	if !errors.Is(err, ErrCircuitOpen) {
+	if !errors.Is(err, resilience.ErrCircuitOpen) {
 		t.Errorf("expected ErrCircuitOpen, got %v", err)
 	}
 }

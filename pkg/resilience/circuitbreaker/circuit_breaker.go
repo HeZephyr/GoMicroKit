@@ -66,7 +66,7 @@ func (cb *CircuitBreaker) Name() string {
 // Execute executes a function with circuit breaker protection
 func (cb *CircuitBreaker) Execute(ctx context.Context, fn func(ctx context.Context) (any, error)) (any, error) {
 	if !cb.Allow() {
-		return nil, ErrCircuitOpen
+		return nil, resilience.ErrCircuitOpen
 	}
 
 	result, err := fn(ctx)
@@ -173,16 +173,4 @@ func (cb *CircuitBreaker) Reset() {
 	cb.setState(StateClosed)
 	cb.failures = 0
 	cb.halfOpenCount = 0
-}
-
-// ErrCircuitOpen is returned when the circuit is open
-var ErrCircuitOpen = CircuitError{msg: "circuit breaker is open"}
-
-// CircuitError represents a circuit breaker error
-type CircuitError struct {
-	msg string
-}
-
-func (e CircuitError) Error() string {
-	return e.msg
 }

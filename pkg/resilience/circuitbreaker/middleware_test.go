@@ -41,7 +41,7 @@ func TestCircuitBreakerMiddleware(t *testing.T) {
 
 	// Third call - circuit should be open, handler should not be called
 	_, err3 := handler(context.Background(), "request")
-	if !errors.Is(err3, ErrCircuitOpen) {
+	if !errors.Is(err3, resilience.ErrCircuitOpen) {
 		t.Errorf("expected ErrCircuitOpen, got %v", err3)
 	}
 
@@ -116,7 +116,7 @@ func TestCircuitBreakerWithServiceChain(t *testing.T) {
 	// Circuit should be open now
 	handlerCalled = false
 	_, err = handler(context.Background(), "success")
-	if !errors.Is(err, ErrCircuitOpen) {
+	if !errors.Is(err, resilience.ErrCircuitOpen) {
 		t.Errorf("expected ErrCircuitOpen, got %v", err)
 	}
 	if handlerCalled {
