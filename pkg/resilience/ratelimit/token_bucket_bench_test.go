@@ -81,7 +81,7 @@ func BenchmarkTokenBucketRateLimiter_Middleware(b *testing.B) {
 		return "success", nil
 	}
 
-	middleware := Middleware(rl)
+	middleware := RateLimiterMiddleware(rl)
 	limitedHandler := middleware(handler)
 	ctx := context.Background()
 
@@ -130,7 +130,7 @@ func BenchmarkTokenBucketRateLimiter_MiddlewareChain(b *testing.B) {
 		}
 	}
 
-	rateLimiterMiddleware := Middleware(rl)
+	rateLimiterMiddleware := RateLimiterMiddleware(rl)
 	chain := service.Chain(loggingMiddleware, rateLimiterMiddleware)
 	limitedHandler := chain(handler)
 	ctx := context.Background()

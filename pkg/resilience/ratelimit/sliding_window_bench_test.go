@@ -107,7 +107,7 @@ func BenchmarkSlidingWindowRateLimiter_Middleware(b *testing.B) {
 		return "success", nil
 	}
 
-	middleware := Middleware(rl)
+	middleware := RateLimiterMiddleware(rl)
 	limitedHandler := middleware(handler)
 	ctx := context.Background()
 
