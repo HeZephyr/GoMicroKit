@@ -2,8 +2,9 @@ package retry
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/binary"
 	"math"
-	"math/rand"
 	"time"
 
 	"github.com/HeZephyr/GoMicroKit/pkg/resilience"
@@ -89,13 +90,27 @@ func (r *Retry) Execute(ctx context.Context, fn func(ctx context.Context) (any, 
 	return result, err
 }
 
+// secureRandomFloat64 generates a secure random float64 in the range [0, 1)
+func secureRandomFloat64() (float64, error) {
+	var buf [8]byte
+	if _, err := rand.Read(buf[:]); err != nil {
+		return 0, err
+	}
+	randomUint64 := binary.LittleEndian.Uint64(buf[:])
+	return float64(randomUint64) / (math.MaxUint64), nil
+}
+
 // calculateBackoff calculates the backoff delay for a given attempt
 func (r *Retry) calculateBackoff(attempt int) time.Duration {
 	// Calculate exponential backoff
 	backoff := float64(r.options.Delay) * math.Pow(r.options.BackoffFactor, float64(attempt))
 
 	// Add jitter to prevent synchronized retries (thundering herd)
-	jitter := rand.Float64() * 0.1 * backoff // 10% jitter
+	jitterFactor, err := secureRandomFloat64()
+	if err != nil {
+		jitterFactor = 0.5 // Fallback to a fixed jitter factor
+	}
+	jitter := jitterFactor * 0.1 * backoff // 10% jitter
 	backoff = backoff + jitter
 
 	// Ensure backoff doesn't exceed max delay
