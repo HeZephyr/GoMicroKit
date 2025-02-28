@@ -99,7 +99,10 @@ func BenchmarkLeakyBucketRateLimiter_Middleware(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		limitedHandler(ctx, "request")
+		_, err := limitedHandler(ctx, "request")
+		if err != nil {
+			b.Fatalf("Expected no error, got: %v", err)
+		}
 
 		// Periodically leak water to avoid always returning false
 		if i > 0 && i%100 == 0 {
