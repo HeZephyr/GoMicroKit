@@ -1,4 +1,4 @@
-// examples/helloworld/main.go
+// examples/helloworld/http/server.go
 package main
 
 import (
