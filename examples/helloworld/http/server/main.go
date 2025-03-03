@@ -116,7 +116,7 @@ func main() {
 	// Create middleware chain
 	middleware := service.Chain(
 		LoggingMiddleware(logger),                   // First log the request
-		retry.Middleware(retrier),                   // Then apply retry (outermost resilience layer)
+		retry.RetryMiddleware(retrier),              // Then apply retry (outermost resilience layer)
 		circuitbreaker.CircuitBreakerMiddleware(cb), // Then circuit breaker
 		ratelimit.RateLimiterMiddleware(rl),         // Finally rate limiting (innermost resilience layer)
 	)

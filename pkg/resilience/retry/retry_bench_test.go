@@ -97,7 +97,7 @@ func BenchmarkRetry_Middleware(b *testing.B) {
 		return "success", nil
 	}
 
-	middleware := Middleware(retry)
+	middleware := RetryMiddleware(retry)
 	retryHandler := middleware(handler)
 	ctx := context.Background()
 
@@ -117,7 +117,7 @@ func BenchmarkRetry_Middleware_WithRetries(b *testing.B) {
 		RetryableFunc: RetryAll(),
 	})
 
-	middleware := Middleware(retry)
+	middleware := RetryMiddleware(retry)
 	ctx := context.Background()
 
 	b.ResetTimer()
@@ -152,7 +152,7 @@ func BenchmarkRetry_MiddlewareChain(b *testing.B) {
 		return "success", nil
 	}
 
-	retryMiddleware := Middleware(retry)
+	retryMiddleware := RetryMiddleware(retry)
 	loggingMiddleware := func(next service.Handler) service.Handler {
 		return func(ctx context.Context, req any) (any, error) {
 			return next(ctx, req)
