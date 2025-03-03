@@ -3,6 +3,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 )
 
@@ -59,8 +60,32 @@ func Chain(middlewares ...Middleware) Middleware {
 }
 
 // ApplyMiddleware applies middleware to a handler function
-func ApplyMiddleware(handler any, middlewares ...Middleware) any {
-	// This is a simplified implementation
-	// In a real implementation, we would use reflection to wrap the handler
-	return handler
+func ApplyMiddleware[Req, Resp any](handler HandlerFunc[Req, Resp], middleware Middleware) HandlerFunc[Req, Resp] {
+	// Convert typed handler to generic handler
+	genericHandler := func(ctx context.Context, req any) (any, error) {
+		typedReq, ok := req.(Req)
+		if !ok {
+			return nil, fmt.Errorf("invalid request type: expected %T, got %T", *new(Req), req)
+		}
+		return handler(ctx, typedReq)
+	}
+
+	// Apply middleware
+	wrappedGenericHandler := middleware(genericHandler)
+
+	// Convert back to typed handler
+	return func(ctx context.Context, req Req) (Resp, error) {
+		resp, err := wrappedGenericHandler(ctx, req)
+		if err != nil {
+			var zero Resp
+			return zero, err
+		}
+
+		typedResp, ok := resp.(Resp)
+		if !ok {
+			var zero Resp
+			return zero, fmt.Errorf("invalid response type: expected %T, got %T", *new(Resp), resp)
+		}
+		return typedResp, nil
+	}
 }
