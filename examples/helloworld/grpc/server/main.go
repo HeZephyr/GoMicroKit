@@ -3,16 +3,18 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
 	"github.com/HeZephyr/GoMicroKit/examples/helloworld/grpc/proto"
 	"github.com/HeZephyr/GoMicroKit/pkg/log"
 	"github.com/HeZephyr/GoMicroKit/pkg/registry"
-	"github.com/HeZephyr/GoMicroKit/pkg/registry/memory"
+	"github.com/HeZephyr/GoMicroKit/pkg/registry/etcd"
 	"github.com/HeZephyr/GoMicroKit/pkg/resilience"
 	"github.com/HeZephyr/GoMicroKit/pkg/resilience/circuitbreaker"
 	"github.com/HeZephyr/GoMicroKit/pkg/resilience/ratelimit"
@@ -129,6 +131,13 @@ func (s *helloWorldServer) SayHelloStream(req *proto.HelloRequest, stream proto.
 }
 
 func main() {
+	// Parse command-line flags
+	port := flag.Int("port", 50051, "The server port")
+	host := flag.String("host", "localhost", "The server host")
+	etcdEndpointsFlag := flag.String("etcd", "localhost:2379", "etcd endpoints (comma separated)")
+	ttl := flag.Duration("ttl", 30*time.Second, "Service registration TTL")
+	flag.Parse()
+
 	// Create a logger
 	logger := log.NewLogger()
 	logger.Info("Starting HelloWorld gRPC service with resilience patterns")
@@ -176,8 +185,17 @@ func main() {
 	svc.AddMetadata("description", "A resilient gRPC hello world service")
 	svc.AddMetadata("transport", "grpc")
 
-	// Create a registry
-	reg := memory.NewRegistry()
+	// Parse etcd endpoints and create etcd registry
+	etcdEndpoints := strings.Split(*etcdEndpointsFlag, ",")
+	reg, err := etcd.NewRegistry(
+		etcdEndpoints,
+		etcd.WithTTL(*ttl),
+		etcd.WithCheckInterval(*ttl/3),
+	)
+	if err != nil {
+		logger.Fatal("Failed to create etcd registry: %v", err)
+	}
+	defer reg.Close()
 
 	// Create a gRPC transport server
 	transport := grpctransport.NewServer()
@@ -189,22 +207,24 @@ func main() {
 
 	// Start the transport in a goroutine
 	go func() {
-		logger.Info("Starting gRPC server on :50051")
-		if err := transport.Serve(":50051"); err != nil {
+		addr := fmt.Sprintf(":%d", *port)
+		logger.Info("Starting gRPC server on %s", addr)
+		if err := transport.Serve(addr); err != nil {
 			logger.Fatal("Server error: %v", err)
 		}
 	}()
 
 	// Register the service with the registry
-	serviceInfo := registry.FromService(svc, "localhost", 50051)
+	serviceInfo := registry.FromService(svc, *host, *port)
 	if err := reg.Register(context.Background(), serviceInfo); err != nil {
-		logger.Fatal("Failed to register service with registry: %v", err)
+		logger.Fatal("Failed to register service with etcd registry: %v", err)
 	}
 
-	logger.Info("Service registered with memory registry")
+	logger.Info("Service registered with etcd registry")
 	logger.Info("Service ID: %s", serviceInfo.ID)
 	logger.Info("Service Name: %s", serviceInfo.Name)
 	logger.Info("Service Version: %s", serviceInfo.Version)
+	logger.Info("Service Address: %s:%d", serviceInfo.Address, serviceInfo.Port)
 
 	// Print usage information
 	logger.Info("Service running. Use the client to test it.")
