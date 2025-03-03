@@ -39,7 +39,7 @@ func NewClient(name string, target string, options ...grpc.DialOption) (*Client,
 	allOptions := append(defaultOptions, options...)
 
 	// Establish connection
-	conn, err := grpc.Dial(target, allOptions...)
+	conn, err := grpc.NewClient(target, allOptions...)
 	if err != nil {
 		return nil, err
 	}
