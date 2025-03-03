@@ -1,4 +1,4 @@
-// examples/grpc/server.go
+// examples/unit/transport/grpc/server/main.go
 package main
 
 import (
@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
-	
-	"github.com/HeZephyr/GoMicroKit/examples/grpc/proto"
+
+	"github.com/HeZephyr/GoMicroKit/examples/unit/transport/grpc/proto"
 	"github.com/HeZephyr/GoMicroKit/pkg/service"
 	grpctransport "github.com/HeZephyr/GoMicroKit/pkg/transport/grpc"
 )
@@ -54,21 +54,21 @@ func (s *greeterServer) SayHelloStream(req *proto.HelloRequest, stream proto.Gre
 func main() {
 	// Create a new gRPC server
 	server := grpctransport.NewGRPCServer()
-	
+
 	// Create service implementation
 	impl := &greeterServer{}
-	
+
 	// Create and configure the service
 	svc := &GreeterService{
 		BaseService:    service.NewService("greeter", "1.0.0"),
 		implementation: impl,
 	}
-	
+
 	// Register the service with the transport
 	if err := server.Register(svc); err != nil {
 		log.Fatalf("Failed to register service: %v", err)
 	}
-	
+
 	// Start the server
 	log.Println("Starting gRPC server on :50051")
 	if err := server.Serve(":50051"); err != nil {

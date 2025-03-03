@@ -1,4 +1,4 @@
-// examples/helloworld/grpc/client.go
+// examples/helloworld/grpc/client/main.go
 package main
 
 import (
@@ -52,7 +52,7 @@ func main() {
 			svc := services[0]
 			serviceAddr = fmt.Sprintf("%s:%d", svc.Address, svc.Port)
 			logger.Info("Discovered service at %s", serviceAddr)
-			
+
 			// Print service metadata
 			logger.Info("Service metadata:")
 			for k, v := range svc.Metadata {
@@ -121,16 +121,16 @@ func main() {
 	} else {
 		// Handle unary RPC with retry
 		logger.Info("Calling SayHello RPC...")
-		
+
 		result, err := retrier.Execute(ctx, func(ctx context.Context) (any, error) {
 			return helloClient.SayHello(ctx, req)
 		})
-		
+
 		if err != nil {
 			logger.Error("Error calling SayHello after retries: %v", err)
 			os.Exit(1)
 		}
-		
+
 		resp := result.(*proto.HelloResponse)
 		logger.Info("Response: %s (at %s)", resp.Message, resp.Time)
 	}

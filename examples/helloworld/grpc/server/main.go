@@ -1,4 +1,4 @@
-// examples/helloworld/grpc/server.go
+// examples/helloworld/grpc/server/main.go
 package main
 
 import (
@@ -112,7 +112,7 @@ func (s *helloWorldServer) SayHelloStream(req *proto.HelloRequest, stream proto.
 	// Send 5 responses with a delay
 	for i := 1; i <= 5; i++ {
 		message := fmt.Sprintf("Hello, %s! (message %d of 5)", name, i)
-		
+
 		if err := stream.Send(&proto.HelloResponse{
 			Message: message,
 			Time:    time.Now().Format(time.RFC3339),
@@ -120,7 +120,7 @@ func (s *helloWorldServer) SayHelloStream(req *proto.HelloRequest, stream proto.
 			s.cb.Failure()
 			return err
 		}
-		
+
 		time.Sleep(1 * time.Second)
 	}
 

@@ -1,4 +1,4 @@
-// examples/grpc/client.go
+// examples/unit/transport/grpc/client/main.go
 package main
 
 import (
@@ -7,7 +7,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/HeZephyr/GoMicroKit/examples/grpc/proto"
+	"github.com/HeZephyr/GoMicroKit/examples/unit/transport/grpc/proto"
 	grpctransport "github.com/HeZephyr/GoMicroKit/pkg/transport/grpc"
 )
 
@@ -25,7 +25,7 @@ func main() {
 	// Call simple RPC method
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	
+
 	// Send a greeting request
 	resp, err := greeterClient.SayHello(ctx, &proto.HelloRequest{Name: "GoMicroKit User"})
 	if err != nil {

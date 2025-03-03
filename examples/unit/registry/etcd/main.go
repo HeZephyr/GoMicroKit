@@ -1,4 +1,4 @@
-// examples/registry/etcd/main.go
+// examples/unit/registry/etcd/main.go
 package main
 
 import (

@@ -1,4 +1,4 @@
-// examples/http/client.go
+// examples/unit/transport/http/client/main.go
 package main
 
 import (

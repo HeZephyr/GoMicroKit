@@ -1,4 +1,4 @@
-// examples/helloworld/client.go
+// examples/helloworld/http/client/main.go
 package main
 
 import (
@@ -131,7 +131,7 @@ func main() {
 	cb.Success()
 	duration := time.Since(startTime)
 	respData := result.(*HelloResponse)
-	
+
 	logger.Info("Request completed successfully in %v", duration)
 	logger.Info("Response: %s", respData.Message)
 	logger.Info("Server time: %s", respData.Time.Format(time.RFC3339))
