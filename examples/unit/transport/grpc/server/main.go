@@ -3,6 +3,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"time"
 
@@ -42,7 +43,7 @@ func (s *greeterServer) SayHelloStream(req *proto.HelloRequest, stream proto.Gre
 	// Send 5 streaming responses with a 1-second delay between each
 	for i := 0; i < 5; i++ {
 		if err := stream.Send(&proto.HelloResponse{
-			Message: "Hello, " + req.Name + "! (stream message " + string(i+'1') + ")",
+			Message: fmt.Sprintf("Hello, %s! (stream message %d)", req.Name, i+1),
 		}); err != nil {
 			return err
 		}
