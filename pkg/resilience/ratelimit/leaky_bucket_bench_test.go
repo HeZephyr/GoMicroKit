@@ -93,7 +93,7 @@ func BenchmarkLeakyBucketRateLimiter_Middleware(b *testing.B) {
 		return "success", nil
 	}
 
-	middleware := RateLimiterMiddleware(rl)
+	middleware := RateLimitMiddleware(rl)
 	limitedHandler := middleware(handler)
 	ctx := context.Background()
 

@@ -20,6 +20,7 @@ import (
 	"github.com/HeZephyr/GoMicroKit/pkg/resilience/ratelimit"
 	"github.com/HeZephyr/GoMicroKit/pkg/resilience/retry"
 	"github.com/HeZephyr/GoMicroKit/pkg/service"
+	"github.com/HeZephyr/GoMicroKit/pkg/tracing"
 	grpctransport "github.com/HeZephyr/GoMicroKit/pkg/transport/grpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -27,91 +28,68 @@ import (
 )
 
 // HelloWorldService combines our Service interface with gRPC registrar
+// It wraps the base service and the actual gRPC server implementation
 type HelloWorldService struct {
 	*service.BaseService
 	implementation *helloWorldServer
 }
 
 // RegisterWithGRPC implements the GRPCServiceRegistrar interface
+// This method is called by the transport layer to register our service with the gRPC server
 func (s *HelloWorldService) RegisterWithGRPC(server *grpc.Server) {
 	proto.RegisterHelloWorldServer(server, s.implementation)
 }
 
-// helloWorldServer is our gRPC server implementation
+// helloWorldServer is our gRPC server implementation that handles actual RPC calls
 type helloWorldServer struct {
 	proto.UnimplementedHelloWorldServer
-	logger  log.Logger
-	cb      *circuitbreaker.CircuitBreaker
-	rl      *ratelimit.TokenBucketRateLimiter
-	retrier *retry.Retry
+	logger log.Logger
 }
 
-// SayHello implements the SayHello RPC
+// SayHello implements the SayHello RPC method
+// This is a unary RPC method that takes a request and returns a response
 func (s *helloWorldServer) SayHello(ctx context.Context, req *proto.HelloRequest) (*proto.HelloResponse, error) {
-	// Apply rate limiting
-	if !s.rl.Allow() {
-		s.logger.Error("Rate limit exceeded")
-		return nil, status.Error(codes.ResourceExhausted, "too many requests")
-	}
+	// Log incoming request
+	s.logger.Info("Handling SayHello request from: %s", req.Name)
 
-	// Apply circuit breaker
-	if !s.cb.Allow() {
-		s.logger.Error("Circuit breaker open")
-		return nil, status.Error(codes.Unavailable, "service temporarily unavailable")
-	}
-
-	// Check for simulated failure
+	// Check for simulated failure - useful for testing resilience patterns
 	if req.Name == "fail" {
 		s.logger.Info("Simulating failure")
-		s.cb.Failure()
 		return nil, status.Error(codes.Internal, "simulated failure")
 	}
 
-	// Log the request
-	s.logger.Info("Received request from: %s", req.Name)
-
-	// Record success
-	s.cb.Success()
-
-	// Create response
+	// Use default name if none provided
 	name := req.Name
 	if name == "" {
 		name = "World"
 	}
 
+	// Create and return the response
 	return &proto.HelloResponse{
 		Message: fmt.Sprintf("Hello, %s!", name),
 		Time:    time.Now().Format(time.RFC3339),
 	}, nil
 }
 
-// SayHelloStream implements the streaming RPC
+// SayHelloStream implements the streaming RPC method
+// This is a server streaming RPC where the server sends multiple responses
 func (s *helloWorldServer) SayHelloStream(req *proto.HelloRequest, stream proto.HelloWorld_SayHelloStreamServer) error {
-	// Apply rate limiting
-	if !s.rl.Allow() {
-		s.logger.Error("Rate limit exceeded")
-		return status.Error(codes.ResourceExhausted, "too many requests")
-	}
-
-	// Apply circuit breaker
-	if !s.cb.Allow() {
-		s.logger.Error("Circuit breaker open")
-		return status.Error(codes.Unavailable, "service temporarily unavailable")
-	}
+	// Log incoming stream request
+	s.logger.Info("Handling SayHelloStream request from: %s", req.Name)
 
 	// Check for simulated failure
 	if req.Name == "fail" {
 		s.logger.Info("Simulating failure")
-		s.cb.Failure()
 		return status.Error(codes.Internal, "simulated failure")
 	}
 
+	// Use default name if none provided
 	name := req.Name
 	if name == "" {
 		name = "World"
 	}
 
-	// Send 5 responses with a delay
+	// Send 5 responses with a delay between each
 	for i := 1; i <= 5; i++ {
 		message := fmt.Sprintf("Hello, %s! (message %d of 5)", name, i)
 
@@ -119,14 +97,13 @@ func (s *helloWorldServer) SayHelloStream(req *proto.HelloRequest, stream proto.
 			Message: message,
 			Time:    time.Now().Format(time.RFC3339),
 		}); err != nil {
-			s.cb.Failure()
 			return err
 		}
 
+		// Add a delay between messages to simulate streaming
 		time.Sleep(1 * time.Second)
 	}
 
-	s.cb.Success()
 	return nil
 }
 
@@ -136,14 +113,30 @@ func main() {
 	host := flag.String("host", "localhost", "The server host")
 	etcdEndpointsFlag := flag.String("etcd", "localhost:2379", "etcd endpoints (comma separated)")
 	ttl := flag.Duration("ttl", 30*time.Second, "Service registration TTL")
+	jaegerEndpoint := flag.String("jaeger", "localhost:4318", "Jaeger endpoint (OTLP HTTP, default: localhost:4318)")
+	tracingEnabled := flag.Bool("tracing", true, "Enable tracing")
 	flag.Parse()
 
 	// Create a logger
 	logger := log.NewLogger()
-	logger.Info("Starting HelloWorld gRPC service with resilience patterns")
+	logger.Info("Starting HelloWorld gRPC service with resilience patterns and tracing")
+
+	// Initialize the tracing provider
+	// This enables distributed tracing across our microservices
+	tracingProvider, err := tracing.NewProvider(
+		tracing.WithServiceName("helloworld-grpc"),
+		tracing.WithOTLPHTTPExporter(*jaegerEndpoint),
+		tracing.WithEnabled(*tracingEnabled),
+		tracing.WithSamplingRate(1.0), // Sample all traces in dev/test
+	)
+	if err != nil {
+		logger.Fatal("Failed to create tracing provider: %v", err)
+	}
+	// Ensure traces are flushed on shutdown
+	defer tracingProvider.Shutdown(context.Background())
 
 	// Create resilience components
-	// 1. Circuit Breaker
+	// 1. Circuit Breaker - prevents cascading failures by failing fast when a service is unhealthy
 	cb := circuitbreaker.NewCircuitBreaker("hello-cb", resilience.CircuitBreakerOptions{
 		Threshold:   5,                // Open after 5 failures
 		Timeout:     30 * time.Second, // Stay open for 30 seconds
@@ -153,39 +146,49 @@ func main() {
 		},
 	})
 
-	// 2. Rate Limiter
+	// 2. Rate Limiter - prevents service overload by limiting the number of requests
 	rl := ratelimit.NewTokenBucketRateLimiter("hello-rl", resilience.RateLimiterOptions{
 		Rate:  10, // 10 requests per second
 		Burst: 5,  // Allow burst of 5 requests
 	})
 
-	// 3. Retry Mechanism
+	// 3. Retry Mechanism - automatically retries failed requests with backoff
 	retrier := retry.NewRetry("hello-retry", resilience.RetryOptions{
 		Attempts:      3,                      // Try up to 3 times
 		Delay:         100 * time.Millisecond, // Start with 100ms delay
 		MaxDelay:      1 * time.Second,        // Cap delay at 1 second
 		BackoffFactor: 2.0,                    // Double delay after each attempt
+		RetryableFunc: func(err error) bool {
+			// Only retry specific errors
+			if err == nil {
+				return false
+			}
+
+			// Don't retry if it's a simulated failure
+			if status, ok := status.FromError(err); ok {
+				return status.Code() != codes.Internal
+			}
+
+			return true
+		},
 	})
 
 	// Create the gRPC implementation
 	impl := &helloWorldServer{
-		logger:  logger,
-		cb:      cb,
-		rl:      rl,
-		retrier: retrier,
+		logger: logger,
 	}
 
-	// Create the service
+	// Create the service wrapper
 	svc := &HelloWorldService{
 		BaseService:    service.NewService("helloworld", "1.0.0"),
 		implementation: impl,
 	}
 
-	// Add service metadata
-	svc.AddMetadata("description", "A resilient gRPC hello world service")
+	// Add service metadata - useful for service discovery and documentation
+	svc.AddMetadata("description", "A resilient gRPC hello world service with tracing")
 	svc.AddMetadata("transport", "grpc")
 
-	// Parse etcd endpoints and create etcd registry
+	// Parse etcd endpoints and create etcd registry for service registration
 	etcdEndpoints := strings.Split(*etcdEndpointsFlag, ",")
 	reg, err := etcd.NewRegistry(
 		etcdEndpoints,
@@ -197,15 +200,33 @@ func main() {
 	}
 	defer reg.Close()
 
-	// Create a gRPC transport server
-	transport := grpctransport.NewServer()
+	// Create gRPC server with interceptors
+	// The order of interceptors is important: outer interceptors are executed first
+	transport := grpctransport.NewGRPCServer(
+		grpctransport.WithServerOptions(
+			grpc.ChainUnaryInterceptor(
+				tracing.TracingInterceptor(tracingProvider),  // First apply tracing (outermost)
+				log.LoggingInterceptor(logger),               // Then logging
+				retry.RetryInterceptor(retrier),              // Then retry logic
+				circuitbreaker.CircuitBreakerInterceptor(cb), // Then circuit breaker
+				ratelimit.RateLimitInterceptor(rl),           // Finally rate limiting (innermost)
+			),
+			grpc.ChainStreamInterceptor(
+				tracing.TracingStreamInterceptor(tracingProvider), // Same pattern for streaming RPCs
+				log.LoggingStreamInterceptor(logger),
+				retry.RetryStreamInterceptor(retrier),
+				circuitbreaker.CircuitBreakerStreamInterceptor(cb),
+				ratelimit.RateLimitStreamInterceptor(rl),
+			),
+		),
+	)
 
 	// Register the service with the transport
 	if err := transport.Register(svc); err != nil {
 		logger.Fatal("Failed to register service: %v", err)
 	}
 
-	// Start the transport in a goroutine
+	// Start the transport in a goroutine to avoid blocking
 	go func() {
 		addr := fmt.Sprintf(":%d", *port)
 		logger.Info("Starting gRPC server on %s", addr)
@@ -214,12 +235,14 @@ func main() {
 		}
 	}()
 
-	// Register the service with the registry
+	// Register the service with the service registry (etcd)
+	// This allows other services to discover and connect to this service
 	serviceInfo := registry.FromService(svc, *host, *port)
 	if err := reg.Register(context.Background(), serviceInfo); err != nil {
 		logger.Fatal("Failed to register service with etcd registry: %v", err)
 	}
 
+	// Log service registration details
 	logger.Info("Service registered with etcd registry")
 	logger.Info("Service ID: %s", serviceInfo.ID)
 	logger.Info("Service Name: %s", serviceInfo.Name)
@@ -229,8 +252,9 @@ func main() {
 	// Print usage information
 	logger.Info("Service running. Use the client to test it.")
 	logger.Info("Try calling with normal name or 'fail' to trigger circuit breaker")
+	logger.Info("Tracing enabled: %v, endpoint: %s", *tracingEnabled, *jaegerEndpoint)
 
-	// Start a goroutine to periodically log stats
+	// Start a goroutine to periodically log circuit breaker stats
 	go func() {
 		ticker := time.NewTicker(10 * time.Second)
 		defer ticker.Stop()
@@ -240,7 +264,7 @@ func main() {
 		}
 	}()
 
-	// Wait for interrupt signal
+	// Wait for interrupt signal to gracefully shut down the server
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
 	<-c
@@ -250,7 +274,13 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	// Deregister the service
+	// Ensure all traces are exported before shutdown
+	logger.Info("Flushing traces...")
+	if err := tracingProvider.Shutdown(ctx); err != nil {
+		logger.Error("Failed to shut down tracing provider: %v", err)
+	}
+
+	// Deregister the service from the registry
 	if err := reg.Deregister(context.Background(), serviceInfo); err != nil {
 		logger.Error("Failed to deregister service: %v", err)
 	}

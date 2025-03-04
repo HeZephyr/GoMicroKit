@@ -236,7 +236,7 @@ func TestTokenBucketRateLimiter_Middleware(t *testing.T) {
 	}
 
 	// Apply rate limiter middleware
-	middleware := RateLimiterMiddleware(rl)
+	middleware := RateLimitMiddleware(rl)
 	limitedHandler := middleware(handler)
 
 	// Should allow burst requests
@@ -282,7 +282,7 @@ func TestTokenBucketRateLimiter_MiddlewareChain(t *testing.T) {
 	}
 
 	// Create middleware chain
-	middleware := service.Chain(RateLimiterMiddleware(rl))
+	middleware := service.Chain(RateLimitMiddleware(rl))
 	limitedHandler := middleware(handler)
 
 	// Should allow burst requests

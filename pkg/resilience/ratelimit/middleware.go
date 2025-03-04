@@ -8,7 +8,7 @@ import (
 )
 
 // RateLimiterMiddleware creates a rate limiter middleware
-func RateLimiterMiddleware(rl resilience.RateLimiter) service.Middleware {
+func RateLimitMiddleware(rl resilience.RateLimiter) service.Middleware {
 	return func(next service.Handler) service.Handler {
 		return func(ctx context.Context, req any) (any, error) {
 			if !rl.Allow() {

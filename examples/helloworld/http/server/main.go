@@ -177,7 +177,7 @@ func main() {
 		log.LoggingMiddleware(logger),               // Then log the request
 		retry.RetryMiddleware(retrier),              // Then apply retry
 		circuitbreaker.CircuitBreakerMiddleware(cb), // Then circuit breaker
-		ratelimit.RateLimiterMiddleware(rl),         // Finally rate limiting (innermost)
+		ratelimit.RateLimitMiddleware(rl),           // Finally rate limiting (innermost)
 	)
 
 	// Create an endpoint with middleware

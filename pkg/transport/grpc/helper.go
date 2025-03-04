@@ -28,11 +28,11 @@ func WithServerOptions(opts ...grpc.ServerOption) ServerOption {
 // NewGRPCServer creates a new gRPC server with the specified options
 func NewGRPCServer(opts ...ServerOption) *Server {
 	options := &serverOptions{}
-	
+
 	for _, opt := range opts {
 		opt(options)
 	}
-	
+
 	return NewServer(options.grpcOptions...)
 }
 
@@ -53,10 +53,10 @@ func WithDialOptions(opts ...grpc.DialOption) ClientOption {
 // NewGRPCClient creates a new gRPC client with the specified options
 func NewGRPCClient(name, target string, opts ...ClientOption) (*Client, error) {
 	options := &clientOptions{}
-	
+
 	for _, opt := range opts {
 		opt(options)
 	}
-	
+
 	return NewClient(name, target, options.dialOptions...)
 }
